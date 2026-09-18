@@ -1,4 +1,4 @@
-// Road Run: vocabulary answers are directional moves in a scrolling world.
+// Road Run: answers earn an automatically planned and timed move.
 const DIRECTIONS = [
   {key:'1', name:'Left', arrow:'←', dx:-1, dy:0},
   {key:'2', name:'Forward', arrow:'↑', dx:0, dy:1},
@@ -21,7 +21,7 @@ bird = function () {
   guidedBird(); player=target;
 };
 move = function (direction) {
-  if(quickRun) {chooseQuick({left:0,up:1,right:2,down:3}[direction]);return true;}
+  if(quickRun) return false;
   const old={...player}, moved=guidedMove(direction);
   if(moved&&!reducedMotion) animatedHop={...old,started:performance.now()};
   return moved;
@@ -45,7 +45,7 @@ openReview=function(){
 };
 $('review').onclick=()=>openReview();
 const launch=document.createElement('div');launch.className='quick-launch';
-launch.innerHTML='<button class="primary" id="quick-start">▶ Road Run</button><label for="quick-pace">Pace</label><select id="quick-pace"><option value="adaptive">Adaptive · 2–6s</option><option value="arcade">Arcade · 2s</option><option value="untimed">Untimed</option></select><span>1 ← &nbsp; 2 ↑ &nbsp; 3 → &nbsp; 4 ↓ &nbsp; · Answer to move</span>';
+launch.innerHTML='<button class="primary" id="quick-start">▶ Road Run</button><label for="quick-pace">Pace</label><select id="quick-pace"><option value="adaptive">Adaptive · 2–6s</option><option value="arcade">Arcade · 2s</option><option value="untimed">Untimed</option></select><span>Choose the answer. We handle the crossing.</span>';
 document.querySelector('.play-layout').before(launch);
 const toolbar=document.createElement('div');toolbar.id='quick-toolbar';toolbar.hidden=true;
 toolbar.innerHTML='<div class="run-score"><span id="run-distance">0 / 20 rows</span><span id="run-lives" aria-label="3 lives">♥ ♥ ♥</span><span id="run-streak">0 streak</span></div><div class="quick-timer" role="progressbar" aria-label="Answer time remaining" aria-valuemin="0" aria-valuemax="100"><div id="quick-time-fill"></div></div><span id="quick-time-label"></span><button id="quick-pause">Pause</button><button id="quick-exit">Guided lesson</button>';
@@ -54,7 +54,7 @@ $('quick-start').onclick=()=>startQuickRun();
 $('quick-pace').onchange=e=>{quickPace=e.target.value;if(quickRun){quickRun.pace=quickPace;if(quickRun.state==='question'){quickRun.limit=quickRun.remaining=quickLimit(quickRun.word);}}};
 $('quick-pause').onclick=toggleQuickPause;$('quick-exit').onclick=()=>startLesson(lesson);
 const guidedHelp=$('how').onclick;
-$('how').onclick=()=>{if(!quickRun){guidedHelp();return;}quickRun.paused=true;updatePauseButton();showDialog('<span class="pill">ROAD RUN</span><h2>Know the word. Make the move.</h2><p>Translate the English prompt. Each German answer is attached to a direction: <b>1 left, 2 forward, 3 right, 4 back</b>. Press its number, its arrow key, or tap its answer. A correct answer moves you immediately.</p><p>Cars, river currents, and trains keep moving while you answer. Watch the destination tile before jumping. River logs carry you; grass is safe. Red railway signals mean a train is coming.</p><p>Reach row 20 with three lives. A collision sends you to your last grassy checkpoint without forgetting words. Misses and timeouts show the answer and schedule another practice. First-time words pause the world until you are ready.</p><p>Press P or Space to pause. Untimed removes the answer deadline; traffic still moves. Guided lessons remain available for a calmer experience and course checkpoints.</p>');};
+$('how').onclick=()=>{if(!quickRun){guidedHelp();return;}quickRun.paused=true;updatePauseButton();showDialog('<span class="pill">ROAD RUN</span><h2>Answer fast. Cross safely.</h2><p>Choose the German translation by tapping its answer or pressing <b>1, 2, 3, or 4</b>. These numbers are answer shortcuts, not directions.</p><p>A correct answer earns one automatic move. Your character looks ahead, waits for gaps, and dodges sideways or backward when needed. Cars, trains, and river currents keep moving while you think, so answering sooner gives it more time to escape.</p><p>Reach row 20 with three lives. Collisions return you to your last grassy checkpoint. New words and corrections pause the world for learning. P or Space pauses at any time. Untimed removes the answer deadline but traffic still moves.</p><p>Guided lessons remain available for slower practice and course checkpoints.</p>');};
 
 function makeRoad(){return TERRAIN.map((type,row)=>({type,row,speed:(row%2?-1:1)*(.65+(row%3)*.14),offset:Math.random()*5,spacing:type==='river'?3.2:4.8,length:type==='river'?2.45:1.15}));}
 function laneObjects(lane,t){
@@ -82,8 +82,8 @@ function startQuickRun(){
     state:'intro',word:null,choices:[],remaining:Infinity,limit:Infinity,road:makeRoad(),invulnerable:0};
   phase='quick';player={x:3,y:0};animatedHop=null;
   document.body.classList.add('quick-playing');
-  document.querySelectorAll('[data-move]').forEach(b=>b.setAttribute('aria-label',{left:'1 — Left answer',up:'2 — Forward answer',right:'3 — Right answer',down:'4 — Back answer'}[b.dataset.move]));
-  canvas.setAttribute('aria-label','Scrolling road with moving cars, river logs and trains. Answer with 1 left, 2 forward, 3 right, or 4 backward. P pauses.');
+  
+  canvas.setAttribute('aria-label','Scrolling road with moving cars, river logs and trains. Choose the German answer with 1, 2, 3, or 4. The character steers automatically. P pauses.');
   $('quick-toolbar').hidden=false;$('quick-start').textContent='↻ Restart run';
   $('lesson-label').textContent=`ROAD RUN · ${COURSE[lesson].title.toUpperCase()}`;
   $('world-label').textContent='THE LONG WAY HOME';updatePauseButton();nextQuickWord();
@@ -110,36 +110,60 @@ function nextQuickWord(){
   }else showQuickQuestion();
   updateRunScore();
 }
-// Pick only legal neighbors. Favor progress, but keep side and backward answers
-// meaningful; putting the right answer permanently on Forward defeats recall.
-function chooseDirection(){
-  const r=quickRun;
-  let choices=DIRECTIONS.map((d,i)=>({i,x:player.x+d.dx,y:player.y+d.dy})).filter(p=>p.x>=0&&p.x<=6&&p.y>=0&&p.y<TERRAIN.length);
-  const safe=choices.filter(p=>!unsafeAt(p.x,p.y,r.clock+.16));
-  if(safe.length)choices=safe;
-  const base=[.23,.42,.23,.12];
-  const weights=choices.map(p=>base[p.i]/(1+(r.visits[`${Math.round(p.x)},${p.y}`]||0)*.3));
-  let pick=Math.random()*weights.reduce((a,b)=>a+b,0);
-  for(let i=0;i<choices.length;i++){pick-=weights[i];if(pick<=0)return choices[i].i;}
-  return choices[choices.length-1].i;
+// Forecast occupancy throughout a landing window, including drifting logs.
+function safeFor(x,y,at,duration=.9){
+  if(!quickRun.road[y]||x<0||x>6)return false;
+  const drift=quickRun.road[y].type==='river'?quickRun.road[y].speed:0;
+  for(let dt=0;dt<=duration+.001;dt+=.075)if(unsafeAt(x+drift*dt,y,at+dt))return false;
+  return true;
+}
+function chooseSafeMove(){
+  const r=quickRun,at=r.clock;
+  const candidates=DIRECTIONS.map((d,i)=>({i,x:player.x+d.dx,y:player.y+d.dy}))
+    .filter(p=>p.x>=0&&p.x<=6&&p.y>=0&&p.y<TERRAIN.length&&safeFor(p.x,p.y,at));
+  const forward=candidates.find(p=>p.i===1);
+  if(forward)return forward;
+  // Wait for an approaching gap while our current tile remains safe.
+  if(safeFor(player.x,player.y,at,.4)&&at-r.navigationSince<.8)return null;
+  const sides=candidates.filter(p=>p.i!==3);
+  const options=sides.length?sides:candidates;
+  options.sort((a,b)=>{
+    const score=p=>(safeFor(p.x,p.y+1,at,.4)?20:0)-(r.visits[Math.round(p.x)+','+p.y]||0)*3-Math.abs(p.x-3);
+    return score(b)-score(a);
+  });
+  return options[0]||null;
+}
+function autoPilot(){
+  const r=quickRun;if(!r||r.state!=='navigating')return false;
+  const target=chooseSafeMove();
+  if(!target){$('quick-feedback').textContent='Correct! Waiting for a safe gap…';return false;}
+  const old={...player};player={x:target.x,y:target.y};
+  if(!reducedMotion)animatedHop={...old,started:performance.now()};hopTime=performance.now();
+  const key=Math.round(player.x)+','+player.y;r.visits[key]=(r.visits[key]||0)+1;
+  r.furthest=Math.max(r.furthest,player.y);
+  if(r.road[player.y].type==='grass'&&player.y>r.checkpoint.y)r.checkpoint={...player};
+  if(player.y===TERRAIN.length-1){finishQuickRun(true);return true;}
+  r.state='hop';r.limit=r.remaining=160;
+  $('quick-feedback').textContent='Richtig! +10 XP · '+r.streak+' streak';
+  toast('Safe hop · '+r.word[0]+' · +10 XP');updateRunScore();return true;
 }
 function showQuickQuestion(){
   const r=quickRun;if(!r)return;
   const fromCard=r.state==='intro'||r.state==='correction';
-  r.correctDirection=chooseDirection();
+  
   const distractors=shuffle(r.pool.filter(w=>w[0]!==r.word[0])).slice(0,3).map(w=>w[0]);
-  r.choices=DIRECTIONS.map((_,i)=>i===r.correctDirection?r.word[0]:distractors.pop());
+  r.choices=shuffle([r.word[0],...distractors]);r.correctAnswer=r.choices.indexOf(r.word[0]);
   r.state='question';r.limit=r.remaining=quickLimit(r.word);r.last=performance.now();
-  $('lesson-content').innerHTML=`<span class="pill">TRANSLATE TO MOVE</span><h2>“${esc(r.word[1])}”</h2><p class="run-hint">Find the German. Press its number to move.</p><div class="direction-answers">${DIRECTIONS.map((d,i)=>`<button class="answer direction-answer direction-${i}" data-quick-choice="${i}"><span class="direction-label"><kbd>${d.key}</kbd>${d.arrow} ${d.name}</span><strong>${esc(r.choices[i])}</strong></button>`).join('')}</div><div id="quick-feedback" class="feedback" aria-live="polite"></div>`;
+  $('lesson-content').innerHTML=`<span class="pill">ANSWER TO ESCAPE</span><h2>“${esc(r.word[1])}”</h2><p class="run-hint">Pick the German answer. We steer and time the hop.</p><div class="auto-answers">${DIRECTIONS.map((d,i)=>`<button class="answer auto-answer" data-quick-choice="${i}"><kbd>${d.key}</kbd><strong>${esc(r.choices[i])}</strong></button>`).join('')}</div><div id="quick-feedback" class="feedback" aria-live="polite"></div>`;
   document.querySelectorAll('[data-quick-choice]').forEach(b=>b.onclick=()=>chooseQuick(Number(b.dataset.quickChoice)));
-  $('game-status').textContent='1 ← · 2 ↑ · 3 → · 4 ↓ · P pause';
-  toast('Answer to move. Watch the road.');
+  $('game-status').textContent='Tap an answer or press 1–4 · P pauses';
+  toast('Answer quickly. We handle the crossing.');
   if(fromCard)window.scrollTo?.({top:0,behavior:'instant'});
 }
 function chooseQuick(choice){
   const r=quickRun;if(!r||r.state!=='question'||r.paused||$('dialog').open||document.hidden)return;
   if(choice!==-1&&(!Number.isInteger(choice)||choice<0||choice>3))return;
-  const correct=choice===r.correctDirection;r.total++;
+  const correct=choice===r.correctAnswer;r.total++;
   updateMemory(r.word,correct);
   if(!correct){
     r.streak=0;r.missed.add(memoryKey(r.word));
@@ -148,18 +172,10 @@ function chooseQuick(choice){
     return;
   }
   r.correct++;r.streak++;r.best=Math.max(r.best,r.streak);saved.xp+=10;save();
-  const d=DIRECTIONS[choice], old={...player};
-  player={x:Math.max(0,Math.min(6,player.x+d.dx)),y:Math.max(0,Math.min(TERRAIN.length-1,player.y+d.dy))};
-  if(!reducedMotion)animatedHop={...old,started:performance.now()};hopTime=performance.now();
-  r.visits[`${Math.round(player.x)},${player.y}`]=(r.visits[`${Math.round(player.x)},${player.y}`]||0)+1;
-  r.furthest=Math.max(r.furthest,player.y);
-  if(unsafeAt(player.x,player.y,r.clock)){roadCollision();return;}
-  if(r.road[player.y].type==='grass'&&player.y>r.checkpoint.y)r.checkpoint={...player};
-  if(player.y===TERRAIN.length-1){finishQuickRun(true);return;}
-  r.state='hop';r.limit=r.remaining=160;
+  r.state='navigating';r.navigationSince=r.clock;r.limit=r.remaining=Infinity;
   document.querySelectorAll('[data-quick-choice]').forEach(b=>{b.disabled=true;if(Number(b.dataset.quickChoice)===choice)b.classList.add('correct');});
-  $('quick-feedback').textContent=`Richtig! +10 XP · ${r.streak} streak`;
-  toast(`${d.arrow} ${r.word[0]} · +10 XP`);updateRunScore();
+  autoPilot();
+
 }
 function showRoadCorrection(title,detail,collision){
   const r=quickRun;r.state='correction';r.limit=r.remaining=Infinity;
@@ -171,7 +187,7 @@ function roadCollision(){
   const r=quickRun;if(!r||r.state==='correction'||r.state==='complete')return;
   r.lives--;r.streak=0;player={...r.checkpoint};animatedHop=null;r.invulnerable=r.clock+.35;
   if(r.lives<=0){finishQuickRun(false);return;}
-  showRoadCorrection('Bump! Back to safety.',`${r.lives} lives left. Watch for a gap before your next hop.`,true);
+  showRoadCorrection('Bump! Back to safety.',`${r.lives} lives left. Answer sooner to give your character time to escape.`,true);
 }
 function updateRunScore(){
   const r=quickRun;if(!r)return;
@@ -198,13 +214,14 @@ function quickTick(now){
   const r=quickRun;if(r){
     const dt=Math.max(0,Math.min(100,now-r.last));r.last=now;
     const running=!r.paused&&!document.hidden&&!$('dialog').open;
-    if(running&&['question','hop'].includes(r.state)){
+    if(running&&['question','hop','navigating'].includes(r.state)){
       const worldScale=r.pace==='adaptive'&&quickLimit(r.word)>2000?.5:1;
       r.clock+=dt/1000*worldScale;
       const lane=r.road[player.y];
       if(lane.type==='river')player.x+=lane.speed*dt/1000*worldScale;
+      if(r.state==='navigating')autoPilot();
       if(r.clock>r.invulnerable&&unsafeAt(player.x,player.y,r.clock))roadCollision();
-      if(['question','hop'].includes(r.state)&&Number.isFinite(r.remaining)){
+      if(['question','hop','navigating'].includes(r.state)&&Number.isFinite(r.remaining)){
         r.remaining=Math.max(0,r.remaining-dt);
         if(r.remaining===0){if(r.state==='question')chooseQuick(-1);else nextQuickWord();}
       }
@@ -212,7 +229,7 @@ function quickTick(now){
     const fraction=Number.isFinite(r.limit)?r.remaining/r.limit:1;
     $('quick-time-fill').style.width=`${Math.max(0,fraction)*100}%`;
     $('quick-time-fill').parentElement.setAttribute('aria-valuenow',String(Math.round(fraction*100)));
-    $('quick-time-label').textContent=r.paused?'Paused':r.state==='question'?(Number.isFinite(r.remaining)?`${(r.remaining/1000).toFixed(1)}s`:'Untimed · traffic moving'):r.state==='complete'?'Finished':'World paused';
+    $('quick-time-label').textContent=r.paused?'Paused':r.state==='question'?(Number.isFinite(r.remaining)?`${(r.remaining/1000).toFixed(1)}s`:'Untimed · traffic moving'):r.state==='navigating'?'Finding a safe gap':r.state==='hop'?'Safe hop':r.state==='complete'?'Finished':'World paused';
     r.camera+=(Math.max(0,player.y-2)-r.camera)*Math.min(1,dt/130);
   }
   requestAnimationFrame(quickTick);
@@ -222,7 +239,6 @@ document.addEventListener('keydown',e=>{
   if(!quickRun||$('dialog').open||['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||e.repeat)return;
   if(e.key===' '||e.key.toLowerCase()==='p'){e.preventDefault();toggleQuickPause();}
   else if(['1','2','3','4'].includes(e.key)){e.preventDefault();chooseQuick(Number(e.key)-1);}
-  else if(['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'].includes(e.key)){e.preventDefault();move({ArrowLeft:'left',ArrowUp:'up',ArrowRight:'right',ArrowDown:'down'}[e.key]);}
 });
 document.addEventListener('visibilitychange',()=>{if(quickRun&&document.hidden){quickRun.paused=true;updatePauseButton();}});
 
@@ -267,15 +283,7 @@ function roadRunFrame(){
       else if(o.type==='river'){box(o.x,o.y,o.length,.72,10,'#b18a59','#8b6748','#785b3f');for(let k=-1;k<=1;k++)box(o.x+k*.7,o.y,.06,.7,11,'#c7a473','#8b6748','#8b6748');}
       else if(o.type==='rail'){box(o.x,o.y,4.4,.66,36,'#d9a650','#b77a37','#99642f');for(let k=-1;k<=1;k++)box(o.x+k*1.25,o.y,1,.5,53,'#eed49a','#657e7b','#476267');}
     }
-    if(r.state==='question'){
-      for(let i=0;i<4;i++){
-        const d=DIRECTIONS[i],x=player.x+d.dx,y=player.y+d.dy;
-        if(x<0||x>6||y<0||y>=TERRAIN.length)continue;
-        const p=iso(x,y,5),danger=unsafeAt(x,y,r.clock);
-        ctx.fillStyle=danger?'#ab493be8':'#fff9e8f2';ctx.beginPath();ctx.arc(p.x,p.y,15,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle=danger?'#fff8e6':'#2e5037';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText(d.key,p.x,p.y+5);ctx.textAlign='start';
-      }
-    }
+
   }finally{iso=originalIso;}
   return true;
 }
