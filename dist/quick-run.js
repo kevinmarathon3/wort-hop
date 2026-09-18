@@ -232,8 +232,9 @@ function roadRunFrame(){
   const r=quickRun;if(!r)return false;
   const height=canvas.clientWidth?Math.round(1000*canvas.clientHeight/canvas.clientWidth):720;
   if(canvas.height!==height)canvas.height=height;
+  const rowStep=Math.max(61,height/10);
   const originalIso=iso;
-  iso=(x,y,z=0)=>({x:500+(x-3)*86+(y-r.camera-2)*22,y:height*.72-(y-r.camera)*61+(x-3)*15-z});
+  iso=(x,y,z=0)=>({x:500+(x-3)*86+(y-r.camera-2)*22,y:height*.72-(y-r.camera)*rowStep+(x-3)*15-z});
   try{
     ctx.clearRect(0,0,1000,height);ctx.fillStyle='#a9c682';ctx.fillRect(0,0,1000,height);
     const start=Math.max(-2,Math.floor(r.camera)-3),end=Math.min(TERRAIN.length+2,Math.ceil(r.camera)+10),objects=[];
