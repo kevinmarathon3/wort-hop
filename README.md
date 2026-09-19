@@ -19,11 +19,11 @@ See [the full syllabus](SYLLABUS.md) for every target and example.
 
 ## Learning
 
-**Road Run** separates answers from steering. Tap one of four German translations or press its number (1–4). A correct answer earns an automatically planned move: the character prefers safe forward progress, waits for gaps, and uses side/backward evasions when needed. It forecasts vehicle positions and log drift over the landing window. Answers are shuffled independently of the chosen movement.
+**Road Run** separates answers from steering. Tap one of four German translations or press its number (1–4). Arrow keys select the same answers: left = 1, up = 2, right = 3, down = 4. A correct answer earns an automatically planned move: the character prefers safe forward progress, waits for gaps, and uses side/backward evasions when needed. It forecasts vehicle positions and log drift over the landing window. Answers are shuffled independently of the chosen movement.
 
-The scrolling 20-row world includes cars, river logs/currents, railway warnings and trains, three lives, and grassy checkpoints. Traffic keeps moving while the learner answers, so faster recall gives the character more time to escape. A late answer can still leave no safe escape. New vocabulary and corrections pause the world.
+The scrolling 20-row world includes cars, river logs/currents, railway warnings and trains, three lives, and grassy checkpoints. Traffic keeps moving while the learner answers, so faster recall gives the character more time to escape. A late answer can still leave no safe escape. New words show an inline translation hint. Mistakes and timeouts show a correction for 1.1 seconds, then advance automatically while traffic continues. No Continue button is required.
 
-Adaptive mode allows 2 seconds for familiar short targets and 6 seconds otherwise; Arcade gives every question 2 seconds. Untimed removes the answer deadline but keeps traffic moving. Correct answers transition after a 160 ms hop, or wait for a safe gap. P or Space pauses; hiding the tab also pauses. Missed words return after two other answered prompts.
+Adaptive mode allows 2 seconds for familiar short targets and 6 seconds otherwise; Arcade gives every question 2 seconds. Untimed removes the answer deadline but keeps traffic moving. Correct answers advance after 140 ms; earned movements queue independently while the character waits for safe gaps. Finishing a road starts another automatically, and running out of lives automatically rescues the player. P or Space pauses; hiding the tab also pauses. Missed words return after two other answered prompts.
 
 Road Run is recognition practice. Guided lessons provide typing, listening, sentence building, and the checkpoint required to unlock the next lesson.
 
