@@ -232,7 +232,7 @@ function quickTick(now){
     $('quick-time-fill').parentElement.setAttribute('aria-valuenow',String(Math.round(fraction*100)));
     $('quick-time-label').textContent=r.paused?'Paused':r.state==='question'?(Number.isFinite(r.remaining)?`${(r.remaining/1000).toFixed(1)}s`:'Untimed · traffic moving'):r.state==='hop'?'Next word…':r.state==='correction'?'Reviewing · next word…':'Running';
     $('run-distance').textContent='Crossing '+(r.laps+1)+' · '+Math.floor(r.furthest)+' / 20';
-    r.camera+=(Math.max(0,player.y-2)-r.camera)*Math.min(1,dt/130);
+    r.camera+=(player.y-r.camera)*Math.min(1,dt/130);
   }
   requestAnimationFrame(quickTick);
 }
@@ -253,7 +253,7 @@ function roadRunFrame(){
   if(canvas.height!==height)canvas.height=height;
   const rowStep=Math.max(61,height/10);
   const originalIso=iso;
-  iso=(x,y,z=0)=>({x:500+(x-3)*86+(y-r.camera-2)*22,y:height*.72-(y-r.camera)*rowStep+(x-3)*15-z});
+  iso=(x,y,z=0)=>({x:500+(x-3)*86+(y-r.camera)*22,y:height*.82-(y-r.camera)*rowStep+(x-3)*15-z});
   try{
     ctx.clearRect(0,0,1000,height);ctx.fillStyle='#a9c682';ctx.fillRect(0,0,1000,height);
     const start=Math.max(-2,Math.floor(r.camera)-3),end=Math.min(TERRAIN.length+2,Math.ceil(r.camera)+10),objects=[];

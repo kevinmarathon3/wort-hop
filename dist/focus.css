@@ -1,0 +1,41 @@
+/* Road Run keeps the road, prompt and controls in one compact field of view. */
+.quick-playing header{height:62px}
+.quick-playing main{padding-top:12px}
+.quick-playing .quick-launch{max-width:580px;margin:0 auto 10px;gap:8px}
+.quick-playing .quick-launch>span{display:none}
+.quick-playing .quick-launch .primary{min-width:0;min-height:38px;padding:9px 12px}
+.quick-playing .quick-launch select{padding:8px;max-width:175px}
+.quick-playing .play-layout{position:relative;display:flex;flex-direction:column;gap:0;max-width:580px;margin:auto;border:1px solid #b5c6a4;border-radius:20px;overflow:hidden;background:#fafcf6;box-shadow:0 10px 35px #243c3210}
+.quick-playing .game-shell{min-height:0;border:0;border-radius:0}
+.quick-playing #game{height:220px;min-height:0}
+.quick-playing .game-top,.quick-playing .game-bottom{display:none}
+.quick-playing .lesson-panel{position:static;min-height:0;border:0;border-radius:0;padding:10px 18px 12px;background:#fafcf6}
+.quick-playing .lesson-meta,.quick-playing .lesson-panel>.progress,.quick-playing .panel-footer{display:none}
+.quick-playing #quick-toolbar:not([hidden]){position:absolute;top:10px;left:12px;right:12px;display:flex;align-items:center;gap:6px;margin:0;padding:7px 9px;border-radius:10px;background:#fafcf6ed;font-size:11px}
+.quick-playing .run-score{flex:1;width:auto;gap:10px;font-size:11px}
+.quick-playing #quick-toolbar button{min-height:28px;padding:4px 7px;font-size:11px}
+.quick-playing .quick-timer{position:absolute;top:211px;left:-12px;width:calc(100% + 24px);height:4px;border-radius:0}
+.quick-playing #quick-time-label{position:absolute;top:229px;right:0;color:#71816a;font-size:11px}
+.quick-playing #lesson-content{text-align:center}
+.quick-playing #lesson-content>.pill,.quick-playing .run-hint{display:none}
+.quick-playing .lesson-panel h2{font-size:26px;line-height:1.2;margin:0 48px 9px;letter-spacing:-.5px}
+.quick-playing .auto-answers{max-width:440px;margin:0 auto;gap:6px}
+.quick-playing .auto-answer{min-height:48px;padding:7px 10px;gap:8px;justify-content:center;background:#fff}
+.quick-playing .auto-answer strong{font-size:15px;line-height:1.2}
+.quick-playing .auto-answer kbd{font-size:11px;width:27px;height:27px;display:grid;place-items:center}
+.quick-playing .auto-answer.correct{background:#edf5da;border-color:#90b962}
+.quick-playing #quick-feedback{min-height:22px;margin:8px 0 0;font-size:12px;line-height:1.35}
+.quick-playing .journey{max-width:850px;margin:30px auto 0}
+@media(max-width:600px){
+  .quick-playing header{height:50px;padding:0 12px}
+  .quick-playing main{padding:8px 10px 0}
+  .quick-playing .quick-launch{margin-bottom:8px;justify-content:space-between}
+  .quick-playing .quick-launch label{display:none}
+  .quick-playing .play-layout{border-radius:14px}
+  .quick-playing .lesson-panel{padding:10px 10px 12px}
+  .quick-playing .lesson-panel h2{font-size:23px}
+  .quick-playing .run-score{gap:6px}
+  .quick-playing #run-streak{display:none}
+  .quick-playing .auto-answer strong{font-size:14px}
+  .quick-playing .auto-answer{padding:7px 6px;gap:5px}
+}
